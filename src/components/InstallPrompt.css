@@ -1,0 +1,107 @@
+.install-prompt {
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  right: 20px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  animation: slideUp 0.3s ease-out;
+  max-width: 400px;
+  margin: 0 auto;
+}
+
+@media (min-width: 768px) {
+  .install-prompt {
+    left: auto;
+    right: 20px;
+    bottom: 20px;
+    max-width: 350px;
+  }
+}
+
+.install-prompt-content {
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.install-prompt-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.install-prompt-text {
+  flex: 1;
+}
+
+.install-prompt-text h3 {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+}
+
+.install-prompt-text p {
+  margin: 0;
+  font-size: 14px;
+  color: #666;
+  line-height: 1.4;
+}
+
+.install-prompt-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.install-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 80px;
+}
+
+.install-btn-primary {
+  background: #2196f3;
+  color: white;
+}
+
+.install-btn-primary:hover {
+  background: #1976d2;
+  transform: translateY(-1px);
+}
+
+.install-btn-secondary {
+  background: #f5f5f5;
+  color: #666;
+}
+
+.install-btn-secondary:hover {
+  background: #e0e0e0;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* iOS Safari specific styles */
+@supports (-webkit-touch-callout: none) {
+  .install-prompt {
+    bottom: env(safe-area-inset-bottom, 20px);
+  }
+}

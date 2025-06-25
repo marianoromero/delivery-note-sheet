@@ -1,0 +1,277 @@
+.camera-scanner {
+  width: 100%;
+  height: 100vh;
+  background: #000;
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Camera Start Screen */
+.camera-start {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 20px;
+  text-align: center;
+  background: linear-gradient(135deg, #1976d2 0%, #2196f3 100%);
+}
+
+.scan-icon {
+  font-size: 4rem;
+  margin-bottom: 20px;
+  animation: pulse 2s infinite;
+}
+
+.camera-start h2 {
+  margin: 0 0 12px 0;
+  font-size: 2rem;
+  font-weight: 700;
+}
+
+.camera-start p {
+  margin: 0 0 32px 0;
+  font-size: 1.1rem;
+  opacity: 0.9;
+  max-width: 300px;
+  line-height: 1.5;
+}
+
+.start-camera-btn {
+  background: #fff;
+  color: #1976d2;
+  border: none;
+  padding: 16px 32px;
+  border-radius: 50px;
+  font-size: 1.2rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.start-camera-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 25px rgba(0, 0, 0, 0.3);
+}
+
+.start-camera-btn:active {
+  transform: translateY(0);
+}
+
+/* Camera Active */
+.camera-active {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.camera-container {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.camera-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.scan-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.scan-frame {
+  width: 280px;
+  height: 200px;
+  border: 3px solid #fff;
+  border-radius: 12px;
+  position: relative;
+  animation: scanPulse 2s infinite;
+}
+
+.scan-frame::before,
+.scan-frame::after {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border: 3px solid #2196f3;
+}
+
+.scan-frame::before {
+  top: -3px;
+  left: -3px;
+  border-right: none;
+  border-bottom: none;
+}
+
+.scan-frame::after {
+  bottom: -3px;
+  right: -3px;
+  border-left: none;
+  border-top: none;
+}
+
+.scan-instruction {
+  margin-top: 20px;
+  font-size: 1rem;
+  text-align: center;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 8px 16px;
+  border-radius: 20px;
+  backdrop-filter: blur(10px);
+}
+
+/* Camera Controls */
+.camera-controls {
+  padding: 20px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.5));
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
+.control-btn {
+  flex: 1;
+  padding: 16px;
+  border: none;
+  border-radius: 50px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  max-width: 140px;
+}
+
+.stop-btn {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.stop-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.scan-btn {
+  background: #2196f3;
+  color: white;
+  border: 2px solid #2196f3;
+  min-height: 56px;
+}
+
+.scan-btn:hover:not(:disabled) {
+  background: #1976d2;
+  border-color: #1976d2;
+  transform: translateY(-2px);
+}
+
+.scan-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.scan-btn.scanning {
+  animation: scanning 1.5s infinite;
+}
+
+/* Error Message */
+.error-message {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  right: 20px;
+  background: #f44336;
+  color: white;
+  padding: 16px;
+  border-radius: 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 1000;
+  animation: slideDown 0.3s ease;
+}
+
+.error-message p {
+  margin: 0;
+  flex: 1;
+  font-size: 0.9rem;
+}
+
+.error-message button {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 4px;
+  margin-left: 12px;
+}
+
+/* Animations */
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+@keyframes scanPulse {
+  0%, 100% { 
+    border-color: #fff;
+    box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7);
+  }
+  50% { 
+    border-color: #2196f3;
+    box-shadow: 0 0 0 10px rgba(33, 150, 243, 0);
+  }
+}
+
+@keyframes scanning {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+@keyframes slideDown {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Responsive */
+@media (max-width: 480px) {
+  .scan-frame {
+    width: 250px;
+    height: 180px;
+  }
+  
+  .camera-start {
+    padding: 16px;
+  }
+  
+  .camera-start h2 {
+    font-size: 1.8rem;
+  }
+  
+  .control-btn {
+    font-size: 1rem;
+    padding: 14px;
+  }
+}
