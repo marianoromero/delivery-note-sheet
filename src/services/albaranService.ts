@@ -123,7 +123,7 @@ class AlbaranService {
     // Buscar número de documento
     for (const line of lines) {
       // Patrones comunes para números de albarán/factura
-      const docNumberMatch = line.match(/(?:albar[aá]n|factura|n[uú]mero|doc|ref)[\s:]*([a-z0-9\-\/]+)/i);
+      const docNumberMatch = line.match(/(?:albar[aá]n|factura|n[uú]mero|doc|ref)[\s:]*([a-z0-9\-/]+)/i);
       if (docNumberMatch) {
         processedData.documentNumber = docNumberMatch[1];
         break;
@@ -136,7 +136,7 @@ class AlbaranService {
       const potentialSupplier = lines.slice(0, 3).find(line => 
         line.length > 5 && 
         !line.match(/\d{2}\/\d{2}\/\d{4}/) && // No es una fecha
-        !line.match(/^\d+[\.,]\d+/) // No es un precio
+        !line.match(/^\d+[.,]\d+/) // No es un precio
       );
       if (potentialSupplier) {
         processedData.supplier = potentialSupplier;
