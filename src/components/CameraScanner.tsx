@@ -97,7 +97,7 @@ const CameraScanner: React.FC<CameraScannerProps> = ({ onScanComplete }) => {
             className="start-camera-btn"
             onClick={startCamera}
           >
-            📷 Activar Cámara
+            SCAN
           </button>
         </div>
       ) : (
@@ -113,7 +113,7 @@ const CameraScanner: React.FC<CameraScannerProps> = ({ onScanComplete }) => {
             <div className="scan-overlay">
               <div className="scan-frame"></div>
               <p className="scan-instruction">
-                Enfoca el documento dentro del marco
+                Enfoca el documento con texto y pulsa CAPTURAR TEXTO
               </p>
             </div>
           </div>
@@ -123,14 +123,14 @@ const CameraScanner: React.FC<CameraScannerProps> = ({ onScanComplete }) => {
               className="control-btn stop-btn"
               onClick={stopCamera}
             >
-              ❌ Cerrar
+              Cerrar
             </button>
             <button 
               className={`control-btn scan-btn ${isScanning ? 'scanning' : ''}`}
               onClick={captureAndScan}
               disabled={isScanning}
             >
-              {isScanning ? '⏳ Escaneando...' : '📱 Escanear'}
+              {isScanning ? 'Procesando...' : 'CAPTURAR TEXTO'}
             </button>
           </div>
         </div>
