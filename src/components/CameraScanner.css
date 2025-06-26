@@ -143,51 +143,66 @@
 
 /* Camera Controls */
 .camera-controls {
-  height: 10vh;
-  padding: 16px 20px;
-  background: rgba(0, 0, 0, 0.9);
+  position: absolute;
+  bottom: 90px; /* Separado del footer (70px del footer + 20px de margen) */
+  left: 0;
+  right: 0;
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 20px;
+  padding: 0 20px;
+  z-index: 200;
 }
 
 .control-btn {
-  padding: 12px 24px;
   border: none;
-  border-radius: 50px;
-  font-size: 1rem;
-  font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
-  min-width: 100px;
+  font-weight: 600;
 }
 
 .stop-btn {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(0, 0, 0, 0.6);
   color: white;
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  padding: 10px 20px;
+  border-radius: 25px;
+  font-size: 0.9rem;
+  backdrop-filter: blur(10px);
 }
 
 .stop-btn:hover {
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(0, 0, 0, 0.8);
+  border-color: rgba(255, 255, 255, 0.6);
 }
 
 .scan-btn {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
   background: #2196f3;
   color: white;
-  border: 2px solid #2196f3;
-  min-height: 48px;
-  flex: 1;
-  max-width: 200px;
-  font-size: 1.1rem;
+  border: 4px solid #fff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-align: center;
+  box-shadow: 0 4px 20px rgba(33, 150, 243, 0.4);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.2;
 }
 
 .scan-btn:hover:not(:disabled) {
   background: #1976d2;
-  border-color: #1976d2;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 25px rgba(33, 150, 243, 0.6);
+}
+
+.scan-btn:active:not(:disabled) {
+  transform: translateY(-1px);
 }
 
 .scan-btn:disabled {
@@ -280,8 +295,18 @@
     font-size: 1.8rem;
   }
   
-  .control-btn {
-    font-size: 1rem;
-    padding: 14px;
+  .camera-controls {
+    bottom: 80px;
+  }
+  
+  .scan-btn {
+    width: 70px;
+    height: 70px;
+    font-size: 0.7rem;
+  }
+  
+  .stop-btn {
+    font-size: 0.8rem;
+    padding: 8px 16px;
   }
 }

@@ -212,7 +212,7 @@ const CameraScanner: React.FC<CameraScannerProps> = ({ onScanComplete }) => {
               onClick={captureAndScan}
               disabled={isScanning}
             >
-              {isScanning ? 'Procesando...' : 'CAPTURAR TEXTO'}
+{isScanning ? 'OCR...' : 'CAPTURAR'}
             </button>
           </div>
         </div>
