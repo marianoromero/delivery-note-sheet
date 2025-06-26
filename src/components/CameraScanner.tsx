@@ -6,14 +6,6 @@ interface CameraScannerProps {
   onScanComplete: (text: string, imageData: string) => void;
 }
 
-interface BeforeInstallPromptEvent extends Event {
-  readonly platforms: string[];
-  readonly userChoice: Promise<{
-    outcome: 'accepted' | 'dismissed';
-    platform: string;
-  }>;
-  prompt(): Promise<void>;
-}
 
 const CameraScanner: React.FC<CameraScannerProps> = ({ onScanComplete }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
