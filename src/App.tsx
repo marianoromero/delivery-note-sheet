@@ -15,13 +15,34 @@ function App() {
     const albaran = albaranService.saveAlbaran(text, imageData);
     console.log('Albarán guardado:', albaran);
     
-    // Mostrar notificación
-    if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification('Albarán escaneado', {
-        body: `Nuevo albarán guardado: ${albaran.processedData?.supplier || 'Sin proveedor'}`,
-        icon: '/logo192.png'
-      });
-    }
+    // Mostrar notificación usando Service Worker si está disponible
+    const showNotification = async () => {
+      try {
+        if ('serviceWorker' in navigator && 'Notification' in window) {
+          const registration = await navigator.serviceWorker.ready;
+          if (Notification.permission === 'granted') {
+            await registration.showNotification('Albarán escaneado', {
+              body: `Nuevo albarán guardado: ${albaran.processedData?.supplier || 'Sin proveedor'}`,
+              icon: '/logo192.png',
+              badge: '/logo192.png',
+              tag: 'albaran-scan',
+              renotify: true
+            });
+          }
+        } else if ('Notification' in window && Notification.permission === 'granted') {
+          // Fallback para navegadores sin Service Worker
+          new Notification('Albarán escaneado', {
+            body: `Nuevo albarán guardado: ${albaran.processedData?.supplier || 'Sin proveedor'}`,
+            icon: '/logo192.png'
+          });
+        }
+      } catch (error) {
+        console.log('Error al mostrar notificación:', error);
+        // Fallback silencioso - no mostrar notificación si hay error
+      }
+    };
+    
+    showNotification();
     
     // Opcional: cambiar a la página de albaranes después de escanear
     // setCurrentPage('albaranes');

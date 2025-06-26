@@ -139,18 +139,6 @@ const CameraScanner: React.FC<CameraScannerProps> = ({ onScanComplete }) => {
 
   return (
     <div className="camera-scanner">
-      <div style={{ 
-        position: 'absolute', 
-        top: '10px', 
-        left: '10px', 
-        background: 'rgba(0,0,0,0.7)', 
-        color: 'white', 
-        padding: '5px', 
-        fontSize: '12px',
-        zIndex: 9999
-      }}>
-        Debug: {isCameraActive ? 'Cámara Activa' : 'Cámara Inactiva'}
-      </div>
 
       {!isCameraActive ? (
         <div className="camera-start">
