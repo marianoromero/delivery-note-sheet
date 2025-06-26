@@ -89,6 +89,20 @@ const AlbaranesList: React.FC<AlbaranesListProps> = ({ onBack }) => {
                 <span className="value">{selectedAlbaran.processedData.documentNumber}</span>
               </div>
             )}
+
+            {selectedAlbaran.processedData?.documentDate && (
+              <div className="info-row">
+                <span className="label">Fecha doc.:</span>
+                <span className="value">{selectedAlbaran.processedData.documentDate}</span>
+              </div>
+            )}
+
+            {selectedAlbaran.processedData?.taxId && (
+              <div className="info-row">
+                <span className="label">CIF/NIF:</span>
+                <span className="value">{selectedAlbaran.processedData.taxId}</span>
+              </div>
+            )}
             
             {selectedAlbaran.processedData?.amount && (
               <div className="info-row">

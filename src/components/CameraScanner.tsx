@@ -38,8 +38,12 @@ const CameraScanner: React.FC<CameraScannerProps> = ({ onScanComplete }) => {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: 'environment',
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
+          width: { ideal: 1920 },
+          height: { ideal: 1080 },
+          aspectRatio: { ideal: 16/9 },
+          focusMode: 'continuous',
+          whiteBalanceMode: 'continuous',
+          exposureMode: 'continuous'
         }
       });
 
