@@ -20,6 +20,15 @@ const CameraScanner: React.FC<CameraScannerProps> = ({ onScanComplete }) => {
     try {
       setError('');
       console.log('Iniciando cámara...');
+      console.log('videoRef.current en startCamera:', videoRef.current);
+      
+      // Primero activar la cámara para que el video element se renderice
+      setIsCameraActive(true);
+      console.log('Estado isCameraActive actualizado a true');
+      
+      // Esperar un tick para que React renderice el video element
+      await new Promise(resolve => setTimeout(resolve, 100));
+      console.log('videoRef.current después del timeout:', videoRef.current);
       
       // Primero verificar si el navegador soporta getUserMedia
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -38,22 +47,22 @@ const CameraScanner: React.FC<CameraScannerProps> = ({ onScanComplete }) => {
 
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        console.log('Stream asignado al video element');
         
         // Configurar el evento para cuando el video esté listo
         videoRef.current.onloadedmetadata = () => {
-          console.log('Video metadata cargada, activando cámara');
-          setIsCameraActive(true);
+          console.log('Video metadata cargada');
         };
         
         // Reproducir el video
-        try {
-          await videoRef.current.play();
-          console.log('Video iniciado correctamente');
-        } catch (playError) {
-          console.log('Error al reproducir video:', playError);
-          // Aún así, activar la cámara
-          setIsCameraActive(true);
-        }
+        videoRef.current.play().then(() => {
+          console.log('Video play() exitoso');
+        }).catch((playError) => {
+          console.log('Error en play():', playError);
+        });
+      } else {
+        console.error('videoRef.current sigue siendo null después del timeout!');
+        setError('Error: No se pudo acceder al elemento de video');
       }
     } catch (err: any) {
       console.error('Error al acceder a la cámara:', err);
@@ -176,6 +185,12 @@ const CameraScanner: React.FC<CameraScannerProps> = ({ onScanComplete }) => {
               playsInline
               muted
               className="camera-video"
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                background: '#000'
+              }}
             />
             <div className="scan-overlay">
               <div className="scan-frame"></div>
