@@ -197,10 +197,12 @@ CREATE POLICY "Public Delete" ON storage.objects FOR DELETE USING (bucket_id = '
       // Update status to processing
       await this.updateAlbaranStatus(albaranId, 'processing')
 
-      // Try to use Edge Function, with fallback to mock processing
+      // Try to use Edge Function, with fallback to Tesseract processing
       let processingResult: AlbaranProcessingResult
 
       try {
+        console.log('🚀 Calling Edge Function with:', { albaranId, imagePath })
+        
         const { data, error } = await supabase.functions.invoke('process-albaran-idp', {
           body: {
             albaran_id: albaranId,
@@ -208,33 +210,36 @@ CREATE POLICY "Public Delete" ON storage.objects FOR DELETE USING (bucket_id = '
           }
         })
 
+        console.log('📡 Edge Function response:', { data, error })
+
         if (error) {
-          console.warn('IDP service error, trying Tesseract:', error.message)
+          console.warn('🚨 IDP service error, trying Tesseract:', error)
           const imageUrl = await this.getImageUrl(imagePath)
           processingResult = await this.processWithTesseract(imageUrl)
-        } else if (data.success) {
+        } else if (data && data.success) {
+          console.log('✅ IDP processing successful:', data)
           processingResult = data
         } else {
-          console.warn('IDP processing failed, trying Tesseract:', data.error)
+          console.warn('⚠️ IDP processing failed, trying Tesseract:', data)
           const imageUrl = await this.getImageUrl(imagePath)
           processingResult = await this.processWithTesseract(imageUrl)
         }
       } catch (functionError: any) {
-        console.warn('Edge function not available, trying Tesseract:', functionError.message)
+        console.error('💥 Edge function error, trying Tesseract:', functionError)
         const imageUrl = await this.getImageUrl(imagePath)
         processingResult = await this.processWithTesseract(imageUrl)
       }
 
       // Update albaran with processed data
       if (processingResult.success) {
+        console.log('✅ Processing successful, updating database with real data')
         await this.updateAlbaranWithProcessedData(albaranId, processingResult.data!, processingResult.rawText)
         await this.updateAlbaranStatus(albaranId, 'completed')
       } else {
-        // If Tesseract also fails, use mock data as last resort
-        console.warn('All processing methods failed, using mock data')
-        processingResult = this.createMockProcessingResult()
-        await this.updateAlbaranWithProcessedData(albaranId, processingResult.data!, processingResult.rawText)
-        await this.updateAlbaranStatus(albaranId, 'completed')
+        // If everything fails, mark as failed instead of using mock data
+        console.error('❌ All processing methods failed')
+        await this.updateAlbaranStatus(albaranId, 'failed')
+        throw new Error('Unable to process document with any method')
       }
 
       return processingResult
@@ -257,17 +262,22 @@ CREATE POLICY "Public Delete" ON storage.objects FOR DELETE USING (bucket_id = '
       // Dynamic import of Tesseract.js to avoid build issues
       const Tesseract = await import('tesseract.js')
       
-      console.log('Starting OCR with Tesseract.js...')
+      console.log('🔍 Starting OCR with Tesseract.js on:', imageUrl)
       
       const { data: { text } } = await Tesseract.recognize(
         imageUrl,
         'spa',
         {
-          logger: m => console.log('Tesseract:', m)
+          logger: m => {
+            if (m.status === 'recognizing text') {
+              console.log(`📝 Tesseract progress: ${Math.round(m.progress * 100)}%`)
+            }
+          }
         }
       )
 
-      console.log('OCR completed. Extracted text:', text)
+      console.log('📄 OCR completed. Extracted text length:', text.length)
+      console.log('📄 First 200 chars:', text.substring(0, 200))
 
       if (!text || text.trim().length < 10) {
         throw new Error('No sufficient text extracted from image')
@@ -275,6 +285,7 @@ CREATE POLICY "Public Delete" ON storage.objects FOR DELETE USING (bucket_id = '
 
       // Process the extracted text to find structured data
       const processedData = this.processExtractedText(text)
+      console.log('🔄 Processed data:', processedData)
 
       return {
         success: true,
@@ -282,7 +293,7 @@ CREATE POLICY "Public Delete" ON storage.objects FOR DELETE USING (bucket_id = '
         rawText: text
       }
     } catch (error: any) {
-      console.error('Tesseract OCR failed:', error)
+      console.error('💥 Tesseract OCR failed:', error)
       return {
         success: false,
         error: `OCR processing failed: ${error.message}`,

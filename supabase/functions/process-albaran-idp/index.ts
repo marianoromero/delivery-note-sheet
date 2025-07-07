@@ -50,13 +50,22 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
     // Get the image from Supabase Storage
+    console.log('📥 Attempting to download image from path:', image_path)
+    
     const { data: imageData, error: downloadError } = await supabase.storage
       .from('albaran-images')
       .download(image_path)
 
     if (downloadError) {
-      throw new Error(`Failed to download image: ${downloadError.message}`)
+      console.error('💥 Failed to download image:', downloadError)
+      throw new Error(`Failed to download image: ${downloadError.message || 'Unknown download error'}`)
     }
+
+    if (!imageData) {
+      throw new Error('No image data received from storage')
+    }
+
+    console.log('✅ Image downloaded successfully, size:', imageData.size)
 
     // Convert blob to base64 for IDP service
     const arrayBuffer = await imageData.arrayBuffer()
