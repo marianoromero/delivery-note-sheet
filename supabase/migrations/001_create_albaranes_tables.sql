@@ -57,3 +57,12 @@ ALTER TABLE albaran_items ENABLE ROW LEVEL SECURITY;
 -- Create policies (for now, allow all operations - adjust based on your auth requirements)
 CREATE POLICY "Allow all operations on albaranes" ON albaranes FOR ALL USING (true);
 CREATE POLICY "Allow all operations on albaran_items" ON albaran_items FOR ALL USING (true);
+
+-- Storage policies for albaran-images bucket
+INSERT INTO storage.buckets (id, name, public) VALUES ('albaran-images', 'albaran-images', true)
+ON CONFLICT (id) DO UPDATE SET public = true;
+
+CREATE POLICY "Public Access" ON storage.objects FOR SELECT USING (bucket_id = 'albaran-images');
+CREATE POLICY "Public Upload" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'albaran-images');
+CREATE POLICY "Public Update" ON storage.objects FOR UPDATE USING (bucket_id = 'albaran-images');
+CREATE POLICY "Public Delete" ON storage.objects FOR DELETE USING (bucket_id = 'albaran-images');
