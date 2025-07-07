@@ -5,6 +5,9 @@ export class SupabaseAlbaranService {
   private readonly STORAGE_BUCKET = 'albaran-images'
 
   async uploadImage(file: File | Blob, fileName?: string): Promise<{ url: string; path: string }> {
+    // First, ensure the bucket exists
+    await this.ensureBucketExists()
+
     const fileExt = file instanceof File ? file.name.split('.').pop() : 'jpg'
     const finalFileName = fileName || `albaran_${Date.now()}.${fileExt}`
     const filePath = `${new Date().getFullYear()}/${new Date().getMonth() + 1}/${finalFileName}`
@@ -30,7 +33,43 @@ export class SupabaseAlbaranService {
     }
   }
 
+  private async ensureBucketExists(): Promise<void> {
+    try {
+      // Try to list buckets to see if our bucket exists
+      const { data: buckets, error: listError } = await supabase.storage.listBuckets()
+      
+      if (listError) {
+        console.warn('Could not list buckets:', listError.message)
+        return // Continue anyway, might be permissions issue
+      }
+
+      const bucketExists = buckets?.some(bucket => bucket.name === this.STORAGE_BUCKET)
+      
+      if (!bucketExists) {
+        // Try to create the bucket
+        const { error: createError } = await supabase.storage.createBucket(this.STORAGE_BUCKET, {
+          public: true,
+          allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp'],
+          fileSizeLimit: 10485760 // 10MB
+        })
+
+        if (createError) {
+          console.warn(`Could not create bucket: ${createError.message}`)
+          // Continue anyway - bucket might exist or we might not have permissions
+        } else {
+          console.log(`Bucket '${this.STORAGE_BUCKET}' created successfully`)
+        }
+      }
+    } catch (error) {
+      console.warn('Error ensuring bucket exists:', error)
+      // Continue anyway - the upload might still work
+    }
+  }
+
   async createAlbaran(imageUrl: string, imagePath: string): Promise<AlbaranRow> {
+    // Ensure tables exist
+    await this.ensureTablesExist()
+
     const albaranData: AlbaranInsert = {
       image_url: imageUrl,
       image_path: imagePath,
@@ -48,6 +87,100 @@ export class SupabaseAlbaranService {
     }
 
     return data
+  }
+
+  private async ensureTablesExist(): Promise<void> {
+    try {
+      // Test if tables exist by doing a simple query
+      const { error } = await supabase
+        .from('albaranes')
+        .select('id')
+        .limit(1)
+
+      if (error && (
+        error.message.includes('relation "public.albaranes" does not exist') ||
+        error.message.includes('table "public.albaranes" does not exist')
+      )) {
+        console.error('Tables do not exist. Setup required.')
+        
+        const setupInstructions = `
+🚨 SETUP REQUIRED 🚨
+
+Please set up your Supabase database:
+
+1. Go to your Supabase dashboard: https://supabase.com/dashboard
+2. Select your project
+3. Go to SQL Editor
+4. Run this SQL script:
+
+${this.getSetupSQL()}
+
+5. Go to Storage and create a bucket named "albaran-images" with public access
+6. Refresh this page
+
+For detailed instructions, see: README_ARCHITECTURE.md
+        `
+        
+        console.error(setupInstructions)
+        throw new Error('Database setup required. Check console for instructions.')
+      }
+    } catch (error: any) {
+      if (error.message.includes('Database setup required')) {
+        throw error
+      }
+      console.warn('Error checking tables:', error)
+    }
+  }
+
+  private getSetupSQL(): string {
+    return `
+-- Enable UUID extension
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- Create albaranes table
+CREATE TABLE albaranes (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    image_url TEXT NOT NULL,
+    image_path TEXT NOT NULL,
+    status TEXT CHECK (status IN ('pending', 'processing', 'completed', 'failed')) DEFAULT 'pending',
+    supplier TEXT,
+    document_number TEXT,
+    document_date DATE,
+    tax_id TEXT,
+    total_amount DECIMAL(10,2),
+    currency TEXT DEFAULT 'EUR',
+    raw_text TEXT,
+    processing_metadata JSONB
+);
+
+-- Create albaran_items table
+CREATE TABLE albaran_items (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    albaran_id UUID NOT NULL REFERENCES albaranes(id) ON DELETE CASCADE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    description TEXT NOT NULL,
+    quantity DECIMAL(10,3),
+    unit_price DECIMAL(10,2),
+    total_price DECIMAL(10,2),
+    line_number INTEGER NOT NULL
+);
+
+-- Create indexes
+CREATE INDEX idx_albaranes_status ON albaranes(status);
+CREATE INDEX idx_albaranes_created_at ON albaranes(created_at DESC);
+CREATE INDEX idx_albaranes_supplier ON albaranes(supplier);
+CREATE INDEX idx_albaran_items_albaran_id ON albaran_items(albaran_id);
+
+-- Enable Row Level Security
+ALTER TABLE albaranes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE albaran_items ENABLE ROW LEVEL SECURITY;
+
+-- Create policies (allow all operations for now)
+CREATE POLICY "Allow all operations on albaranes" ON albaranes FOR ALL USING (true);
+CREATE POLICY "Allow all operations on albaran_items" ON albaran_items FOR ALL USING (true);
+    `
   }
 
   async processAlbaranWithIDP(albaranId: string, imagePath: string): Promise<AlbaranProcessingResult> {
