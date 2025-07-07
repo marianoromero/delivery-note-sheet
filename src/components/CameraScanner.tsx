@@ -1,9 +1,9 @@
 import React, { useRef, useState, useCallback } from 'react';
-import Tesseract from 'tesseract.js';
+import { supabaseAlbaranService } from '../services/supabaseAlbaranService';
 import './CameraScanner.css';
 
 interface CameraScannerProps {
-  onScanComplete: (text: string, imageData: string) => void;
+  onScanComplete: (albaranId: string, imageUrl: string) => void;
 }
 
 
@@ -110,25 +110,26 @@ const CameraScanner: React.FC<CameraScannerProps> = ({ onScanComplete }) => {
       // Dibujar el frame actual del video en el canvas
       context.drawImage(video, 0, 0);
 
-      // Obtener la imagen como data URL
-      const imageData = canvas.toDataURL('image/jpeg', 0.8);
+      // Convertir canvas a blob
+      const blob = await new Promise<Blob>((resolve) => {
+        canvas.toBlob((blob) => resolve(blob!), 'image/jpeg', 0.8);
+      });
 
-      console.log('Iniciando OCR...');
-      const { data: { text } } = await Tesseract.recognize(
-        canvas,
-        'spa',
-        {
-          logger: m => console.log('OCR:', m)
-        }
+      console.log('Procesando imagen con IDP...');
+      
+      // Process the image through the new Supabase architecture
+      const { albaran, processingResult } = await supabaseAlbaranService.processNewAlbaran(
+        blob,
+        `albaran_${Date.now()}.jpg`
       );
 
-      console.log('Texto extraído:', text);
+      console.log('Procesamiento completado:', processingResult);
 
-      if (text.trim()) {
-        onScanComplete(text.trim(), imageData);
+      if (processingResult.success) {
+        onScanComplete(albaran.id, albaran.image_url);
         stopCamera();
       } else {
-        setError('No se detectó texto. Intenta de nuevo con mejor iluminación.');
+        setError(`Error en el procesamiento: ${processingResult.error || 'Error desconocido'}`);
       }
     } catch (err: any) {
       console.error('Error al procesar la imagen:', err);
@@ -201,7 +202,7 @@ const CameraScanner: React.FC<CameraScannerProps> = ({ onScanComplete }) => {
               onClick={captureAndScan}
               disabled={isScanning}
             >
-{isScanning ? 'OCR...' : 'CAPTURAR'}
+{isScanning ? 'PROCESANDO...' : 'CAPTURAR'}
             </button>
           </div>
         </div>
