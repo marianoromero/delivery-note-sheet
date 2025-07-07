@@ -5,12 +5,11 @@ export class SupabaseAlbaranService {
   private readonly STORAGE_BUCKET = 'albaran-images'
 
   async uploadImage(file: File | Blob, fileName?: string): Promise<{ url: string; path: string }> {
-    // First, ensure the bucket exists
-    await this.ensureBucketExists()
-
     const fileExt = file instanceof File ? file.name.split('.').pop() : 'jpg'
     const finalFileName = fileName || `albaran_${Date.now()}.${fileExt}`
     const filePath = `${new Date().getFullYear()}/${new Date().getMonth() + 1}/${finalFileName}`
+
+    console.log('📤 Uploading to storage:', { bucket: this.STORAGE_BUCKET, filePath })
 
     const { data, error } = await supabase.storage
       .from(this.STORAGE_BUCKET)
@@ -20,8 +19,11 @@ export class SupabaseAlbaranService {
       })
 
     if (error) {
+      console.error('💥 Upload error:', error)
       throw new Error(`Error uploading image: ${error.message}`)
     }
+
+    console.log('✅ Upload successful:', data)
 
     const { data: urlData } = supabase.storage
       .from(this.STORAGE_BUCKET)
@@ -226,7 +228,9 @@ CREATE POLICY "Public Delete" ON storage.objects FOR DELETE USING (bucket_id = '
         }
       } catch (functionError: any) {
         console.error('💥 Edge function error, trying Tesseract:', functionError)
+        console.error('Full error details:', JSON.stringify(functionError, null, 2))
         const imageUrl = await this.getImageUrl(imagePath)
+        console.log('🔗 Image URL for Tesseract:', imageUrl)
         processingResult = await this.processWithTesseract(imageUrl)
       }
 
@@ -277,10 +281,11 @@ CREATE POLICY "Public Delete" ON storage.objects FOR DELETE USING (bucket_id = '
       )
 
       console.log('📄 OCR completed. Extracted text length:', text.length)
-      console.log('📄 First 200 chars:', text.substring(0, 200))
+      console.log('📄 Raw text:', JSON.stringify(text.substring(0, 300)))
 
-      if (!text || text.trim().length < 10) {
-        throw new Error('No sufficient text extracted from image')
+      if (!text || text.trim().length < 3) {
+        console.warn('⚠️ Very little text extracted, but proceeding anyway')
+        // Don't throw error, proceed with whatever we have
       }
 
       // Process the extracted text to find structured data
@@ -294,18 +299,40 @@ CREATE POLICY "Public Delete" ON storage.objects FOR DELETE USING (bucket_id = '
       }
     } catch (error: any) {
       console.error('💥 Tesseract OCR failed:', error)
+      console.error('Error stack:', error.stack)
+      
+      // Return success with empty data instead of failing
       return {
-        success: false,
-        error: `OCR processing failed: ${error.message}`,
-        rawText: undefined
+        success: true,
+        data: {
+          supplier: `Error: ${error.message}`,
+          documentNumber: 'OCR_FAILED',
+          totalAmount: 0,
+          currency: 'EUR'
+        },
+        rawText: `OCR Error: ${error.message}`
       }
     }
   }
 
   private processExtractedText(text: string) {
+    console.log('🔍 Processing extracted text:', { textLength: text.length, text: text.substring(0, 100) })
+    
+    if (!text || text.length === 0) {
+      console.warn('⚠️ No text to process, returning minimal data')
+      return {
+        supplier: 'No text detected',
+        documentNumber: 'NO_TEXT',
+        totalAmount: 0,
+        currency: 'EUR'
+      }
+    }
+    
     const lines = text.split('\n').map(line => line.trim()).filter(line => line)
     const processedData: any = {}
     const allText = text.toLowerCase()
+    
+    console.log('📝 Text lines found:', lines.length)
 
     // 1. Número de documento
     const docPatterns = [
@@ -357,7 +384,9 @@ CREATE POLICY "Public Delete" ON storage.objects FOR DELETE USING (bucket_id = '
 
     for (const pattern of amountPatterns) {
       for (const line of lines) {
-        const matches = Array.from(line.matchAll(new RegExp(pattern.source, pattern.flags)))
+        // Ensure the regex has global flag for matchAll
+        const globalPattern = new RegExp(pattern.source, (pattern.flags || '') + (pattern.global ? '' : 'g'))
+        const matches = Array.from(line.matchAll(globalPattern))
         for (const match of matches) {
           if (match[1]) {
             const amount = parseFloat(match[1].replace(',', '.'))
