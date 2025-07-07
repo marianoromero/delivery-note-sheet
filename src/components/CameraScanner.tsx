@@ -40,10 +40,7 @@ const CameraScanner: React.FC<CameraScannerProps> = ({ onScanComplete }) => {
           facingMode: 'environment',
           width: { ideal: 1920 },
           height: { ideal: 1080 },
-          aspectRatio: { ideal: 16/9 },
-          focusMode: 'continuous',
-          whiteBalanceMode: 'continuous',
-          exposureMode: 'continuous'
+          aspectRatio: { ideal: 16/9 }
         }
       });
 

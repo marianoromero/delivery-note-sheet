@@ -175,7 +175,7 @@ class AlbaranService {
 
     for (const pattern of amountPatterns) {
       for (const line of lines) {
-        const matches = line.matchAll(new RegExp(pattern.source, pattern.flags));
+        const matches = Array.from(line.matchAll(new RegExp(pattern.source, pattern.flags)));
         for (const match of matches) {
           if (match[1]) {
             const amount = parseFloat(match[1].replace(',', '.'));
