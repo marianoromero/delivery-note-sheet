@@ -63,13 +63,13 @@ serve(async (req) => {
     const base64Image = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)))
 
     // Here you would integrate with your chosen IDP service
-    // Try OCR.space first (simpler and works immediately)
-    let result = await processWithOCRSpace(base64Image)
+    // Try Google Cloud Document AI first (highest accuracy)
+    let result = await processWithDocumentAI(base64Image)
     
-    // If OCR.space fails, try Google Cloud Document AI
+    // If Google Document AI fails, fallback to OCR.space
     if (!result.success) {
-      console.log('OCR.space failed, trying Document AI...')
-      result = await processWithDocumentAI(base64Image)
+      console.log('Document AI failed, trying OCR.space...')
+      result = await processWithOCRSpace(base64Image)
     }
 
     return new Response(
@@ -176,12 +176,14 @@ async function processWithDocumentAI(base64Image: string): Promise<IDPResponse> 
 // Function to get OAuth2 access token from service account
 async function getAccessToken(serviceAccount: any): Promise<string> {
   const now = Math.floor(Date.now() / 1000)
+  
+  // Create JWT header
   const header = {
     alg: 'RS256',
-    typ: 'JWT',
-    kid: serviceAccount.private_key_id
+    typ: 'JWT'
   }
   
+  // Create JWT payload
   const payload = {
     iss: serviceAccount.client_email,
     scope: 'https://www.googleapis.com/auth/cloud-platform',
@@ -190,14 +192,75 @@ async function getAccessToken(serviceAccount: any): Promise<string> {
     iat: now
   }
 
-  // Create JWT token (simplified implementation)
-  // In a real implementation, you'd use a proper JWT library
+  // Encode header and payload
   const headerB64 = btoa(JSON.stringify(header)).replace(/[+/]/g, c => c === '+' ? '-' : '_').replace(/=/g, '')
   const payloadB64 = btoa(JSON.stringify(payload)).replace(/[+/]/g, c => c === '+' ? '-' : '_').replace(/=/g, '')
   
-  // For now, we'll use a simpler approach - return a mock token
-  // This is a placeholder - you'd need to implement proper JWT signing with the private key
-  throw new Error('Service Account authentication not fully implemented. Please use a simpler approach or OCR.space API.')
+  // Create the unsigned token
+  const unsignedToken = `${headerB64}.${payloadB64}`
+  
+  // Import the private key
+  const privateKeyPem = serviceAccount.private_key
+  const privateKeyBuffer = pemToArrayBuffer(privateKeyPem)
+  
+  // Import the key for signing
+  const key = await crypto.subtle.importKey(
+    'pkcs8',
+    privateKeyBuffer,
+    {
+      name: 'RSASSA-PKCS1-v1_5',
+      hash: 'SHA-256'
+    },
+    false,
+    ['sign']
+  )
+  
+  // Sign the token
+  const signature = await crypto.subtle.sign(
+    'RSASSA-PKCS1-v1_5',
+    key,
+    new TextEncoder().encode(unsignedToken)
+  )
+  
+  // Encode signature
+  const signatureB64 = btoa(String.fromCharCode(...new Uint8Array(signature)))
+    .replace(/[+/]/g, c => c === '+' ? '-' : '_').replace(/=/g, '')
+  
+  // Create the signed JWT
+  const jwt = `${unsignedToken}.${signatureB64}`
+  
+  // Exchange JWT for access token
+  const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded'
+    },
+    body: new URLSearchParams({
+      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+      assertion: jwt
+    })
+  })
+  
+  if (!tokenResponse.ok) {
+    const errorText = await tokenResponse.text()
+    throw new Error(`Failed to get access token: ${errorText}`)
+  }
+  
+  const tokenData = await tokenResponse.json()
+  return tokenData.access_token
+}
+
+// Helper function to convert PEM to ArrayBuffer
+function pemToArrayBuffer(pem: string): ArrayBuffer {
+  const pemHeader = '-----BEGIN PRIVATE KEY-----'
+  const pemFooter = '-----END PRIVATE KEY-----'
+  const pemContents = pem.replace(pemHeader, '').replace(pemFooter, '').replace(/\s/g, '')
+  const binaryString = atob(pemContents)
+  const bytes = new Uint8Array(binaryString.length)
+  for (let i = 0; i < binaryString.length; i++) {
+    bytes[i] = binaryString.charCodeAt(i)
+  }
+  return bytes.buffer
 }
 
 // OCR.space API processing (simpler alternative)
